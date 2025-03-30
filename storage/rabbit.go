@@ -7,6 +7,7 @@ import (
     "os"
 	amqp "github.com/rabbitmq/amqp091-go"
 	"time"
+	"github.com/google/uuid"
 )
 
 func init() {
@@ -22,7 +23,8 @@ func failOnError(err error, msg string) {
 }
 
 type AbsChannel interface {
-	Init()
+	InitExchange()
+	InitQueue(queueName string)
 	Publish(text string)
 	Close()
 	GetMessageChan() <-chan amqp.Delivery
@@ -38,7 +40,7 @@ func NewRabbitChannel() AbsChannel {
 	return &RabbitChannel{}
 }
 
-func (rc *RabbitChannel) Init() {
+func (rc *RabbitChannel) InitExchange() {
 	connStr := fmt.Sprintf("amqp://%s:%s@host.docker.internal:%s/",
 		os.Getenv("RABBITMQ_USER"),
 		os.Getenv("RABBITMQ_PASS"),
@@ -70,9 +72,11 @@ func (rc *RabbitChannel) Init() {
 		nil,
 	)
 	failOnError(err, "Failed to declare an exchange")
+}
 
-	q, err := ch.QueueDeclare(
-		"q1",
+func (rc *RabbitChannel) InitQueue(queueName string) {
+	q, err := rc.ch.QueueDeclare(
+		queueName,
 		false,
 		false,
 		false,
@@ -82,7 +86,7 @@ func (rc *RabbitChannel) Init() {
 	failOnError(err, "Failed to declare a queue")
 	rc.q = q
 
-	err = ch.QueueBind(
+	err = rc.ch.QueueBind(
 		q.Name,
 		"",
 		"fanout_ex",
@@ -99,6 +103,9 @@ func (rc *RabbitChannel) Publish(text string) {
 		false,
 		false,
 		amqp.Publishing{
+			Headers: amqp.Table{
+				"X-Idempotency-Key": uuid.New().String(),
+			},
 			ContentType: "text/plain",
 			Body: []byte(text),
 	})
@@ -114,7 +121,7 @@ func (rc *RabbitChannel) GetMessageChan() <-chan amqp.Delivery {
 	msgs, err := rc.ch.Consume(
 		rc.q.Name,
 		"",
-		false,
+		true,
 		false,
 		false,
 		false,

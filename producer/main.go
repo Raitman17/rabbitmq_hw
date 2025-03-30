@@ -15,7 +15,7 @@ func main() {
 	rand.Seed(time.Now().UnixNano())
 
 	ch := storage.NewRabbitChannel()
-	ch.Init()
+	ch.InitExchange()
 	defer ch.Close()
 
 	input, err := os.Open(fileName)
@@ -28,7 +28,7 @@ func main() {
 	in := bufio.NewScanner(input)
 
 	for in.Scan() {
-		randomMs := time.Duration(rand.Intn(400))
+		randomMs := time.Duration(rand.Intn(500))
 		time.Sleep(randomMs * time.Millisecond)
 		ch.Publish(in.Text())
 		log.Printf("Producer sent message %s.\n", in.Text())

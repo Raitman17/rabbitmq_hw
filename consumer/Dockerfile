@@ -20,7 +20,7 @@ WORKDIR /myapp
 COPY --from=builder /app/consumer ./
 COPY --from=builder /app/.env ./
 
-ARG TABLE_NAME_DEFAULT  
-RUN echo -e "\nTABLE_NAME=${TABLE_NAME_DEFAULT}" >> .env
+ARG CONSUMER_NAME_DEFAULT  
+RUN echo -e "\nCONSUMER_NAME=${CONSUMER_NAME_DEFAULT}" >> .env
 
 CMD [ "/myapp/consumer" ]
