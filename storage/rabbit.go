@@ -7,7 +7,7 @@ import (
     "os"
 	amqp "github.com/rabbitmq/amqp091-go"
 	"time"
-	"github.com/google/uuid"
+	// "github.com/google/uuid"
 )
 
 func init() {
@@ -103,9 +103,9 @@ func (rc *RabbitChannel) Publish(text string) {
 		false,
 		false,
 		amqp.Publishing{
-			Headers: amqp.Table{
-				"X-Idempotency-Key": uuid.New().String(),
-			},
+			// Headers: amqp.Table{
+			// 	"X-Idempotency-Key": uuid.New().String(),
+			// },
 			ContentType: "text/plain",
 			Body: []byte(text),
 	})

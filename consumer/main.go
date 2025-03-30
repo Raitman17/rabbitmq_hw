@@ -31,16 +31,17 @@ func main() {
 loop:
 	for {
 		select {
-		case msg := <-msgs:
+		case message := <-msgs:
+			msg := string(message.Body)
 			randomMs := time.Duration(rand.Intn(ms))
 			time.Sleep(randomMs * time.Millisecond)
-			headers := msg.Headers
-			idemKey := headers["X-Idempotency-Key"].(string)
-			val := rdb.Get(idemKey)
+			// headers := msg.Headers
+			// idemKey := headers["X-Idempotency-Key"].(string)
+			val := rdb.Get(msg)
 			if val == nil {
-				db.Insert(consumerName, string(msg.Body))
-				rdb.Set(idemKey, string(msg.Body))
-				log.Printf("%s cached message: %s", consumerName, msg.Body)
+				db.Insert(consumerName, msg)
+				rdb.Set(msg, msg)
+				log.Printf("%s cached message: %s", consumerName, msg)
 				ms += 30
 			} else {
 				db.Insert(consumerName, *val)
@@ -48,7 +49,7 @@ loop:
 					ms -= 30
 				}
 			}
-			log.Printf("%s wrote the %s into the database\n", consumerName, msg.Body)
+			log.Printf("%s wrote the %s into the database\n", consumerName, msg)
 		case <-time.After(5 * time.Second):
 			break loop
 		}
